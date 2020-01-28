@@ -20,10 +20,6 @@
 // MAGIC connectionProperties.put("user", s"${jdbcUser}")
 // MAGIC connectionProperties.put("password", s"${jdbcPassword}")
 // MAGIC connectionProperties.setProperty("Driver", driverClass)
-// MAGIC 
-// MAGIC //Read and display data
-// MAGIC val sflight = spark.read.jdbc(jdbcUrl, "ONE.TAXI_WITHOUTPAYMENTDATA", connectionProperties)
-// MAGIC sflight.show()
 
 // COMMAND ----------
 
@@ -33,11 +29,16 @@ val storage_account_access_key = dbutils.secrets.get(scope="sid1805", key="sid18
 // COMMAND ----------
 
 val TAXI_WITHOUTPAYMENTDATA = spark.read.jdbc(jdbcUrl, "ONE.TAXI_WITHOUTPAYMENTDATA", connectionProperties)
-TAXI_WITHOUTPAYMENTDATA.show()
+
 
 // COMMAND ----------
 
-TAXI_WITHOUTPAYMENTDATA.write.format("delta").save("/mnt/datalake/Demo")
+TAXI_WITHOUTPAYMENTDATA.write.format("delta").mode("overwrite").save("/mnt/datalake/Demo")
+
+// COMMAND ----------
+
+// MAGIC %sql 
+// MAGIC DROP TABLE TAXI_WITHOUTPAYMENTDATA
 
 // COMMAND ----------
 
@@ -53,7 +54,7 @@ Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver")
 //val jdbcPassword = dbutils.secrets.get(scope = "jdbc", key = "password")
 
 val jdbcUsername1 = "one_admin"
-val jdbcPassword1 = "AZURE2be1!"
+val jdbcPassword1 = dbutils.secrets.get(scope="sid1805", key="sidsql")
 
 val jdbcHostname1 = "one-dw-01.database.windows.net"
 val jdbcPort1 = 1433
@@ -76,7 +77,7 @@ connectionProperties1.setProperty("Driver", driverClass)
 
 // COMMAND ----------
 
-val taxi_payment_lookup = spark.read.jdbc(jdbcUrl, "[SHELL_POC].[TAXI_PAYMENT_TYPE]", connectionProperties1)
+val taxi_payment_lookup = spark.read.jdbc(jdbcUrl1, "[SHELL_POC].[TAXI_PAYMENT_TYPE]", connectionProperties1)
 
 // COMMAND ----------
 
@@ -84,23 +85,18 @@ var taxi_payment_lookup1  = taxi_payment_lookup.withColumnRenamed("Payment_type"
 
 // COMMAND ----------
 
-taxi_payment_lookup1.write.saveAsTable("TAXI_PAYMENT_TYPE1")
+taxi_payment_lookup1.write.mode("overwrite").saveAsTable("TAXI_PAYMENT_TYPE1")
 
 // COMMAND ----------
 
 // MAGIC %sql
-// MAGIC select count(*) from TAXI_PAYMENT_TYPE1
+// MAGIC DROP TABLE TAXI_WITHPAYMENTDATA 
 
 // COMMAND ----------
 
 // MAGIC %sql
 // MAGIC create table TAXI_WITHPAYMENTDATA AS (
 // MAGIC select * from TAXI_WITHOUTPAYMENTDATA a INNER JOIN TAXI_PAYMENT_TYPE1 b ON a.payment_type = b.Code)
-
-// COMMAND ----------
-
-// MAGIC %sql
-// MAGIC select count(*) from TAXI_WITHPAYMENTDATA
 
 // COMMAND ----------
 
